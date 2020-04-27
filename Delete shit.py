@@ -7,7 +7,7 @@ if __name__ == "__main__":
     file_3 = "_HandPhone_Checkpoints_(HTC_One).csv"
     file_4 = "_HandPhone_Gyroscope_(HTC_One).csv"
     file_5 = "_HandPhone_Keyboard_(HTC_One).csv"
-    file_6 = "_HandPhone_TouchEvent_(HTC_One).csv"  # keep
+    file_6 = "_HandPhone_TouchEvent_(Samsung_S6).csv"  # keep
     file_7 = "_HandTablet_Accelerometer_(Nexus9).csv"
     file_8 = "_HandTablet_Checkpoints_(Nexus9).csv"
     file_9 = "_HandTablet_Gyroscope_(Nexus9).csv"
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     data_path = "BB-MAS_Dataset\\"
     for i in range(1, 118):
-        to_delete = data_path + str(i) + "\\" + str(i) + file_1
+        to_delete = data_path + str(i) + "\\" + str(i) + file_6
         if os.path.exists(to_delete):
             os.remove(to_delete)
         to_delete = data_path + str(i) + "\\" + str(i) + file_2
