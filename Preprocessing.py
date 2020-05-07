@@ -1,14 +1,6 @@
 # Install packages as per the need
 import os
 import pandas as pd
-from imblearn.over_sampling import SMOTE
-from matplotlib import pyplot as plt
-from sklearn.feature_selection import mutual_info_classif, SelectKBest
-from sklearn.model_selection import GridSearchCV
-from sklearn import linear_model
-from sklearn.metrics import confusion_matrix, make_scorer
-import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
 import pickle as pc
 
 
