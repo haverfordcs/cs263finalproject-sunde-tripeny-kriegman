@@ -37,12 +37,16 @@ def gait_preprocessor(users, segments):
         print("Preprocessing User" + str(user))
         a_path = "BB-MAS_Dataset/" + str(user) + "/" + str(user) + "_PocketPhone_Accelerometer_(Samsung_S6).csv"
         g_path = "BB-MAS_Dataset/" + str(user) + "/" + str(user) + "_PocketPhone_Gyroscope_(Samsung_S6).csv"
+
         if os.path.exists(a_path) and os.path.exists(g_path):
             a_data_frame = pd.read_csv(a_path)
             g_data_frame = pd.read_csv(g_path)
 
+            a_data_frame = smooth(a_data_frame, 1)
+            g_data_frame = smooth(g_data_frame, 1)
+
             a_segments = split(a_data_frame, segments)
-            g_segments = split(a_data_frame, segments)
+            g_segments = split(g_data_frame, segments)
 
             length = len(a_segments[0])
             for i in range(0, len(a_segments)):
@@ -68,11 +72,30 @@ def gait_preprocessor(users, segments):
             print("User" + str(user) + " invalid!")
 
 
-def split(data, chunks):
+def split(data, seg_length):
     length = len(data)
-    seg_length = int(length / chunks)
-    segments = [data[x:x + seg_length] for x in range(0, length - length % chunks, seg_length)]
+    chunks = int(length / seg_length)
+    segments = []
+
+    for i in range(len(data)):
+        sublist = data[seg_length * i:seg_length + seg_length * i]
+        if len(sublist) == seg_length:
+            segments.append(sublist)
+        else:
+            break
+
+    print(len(segments))
     return segments
+
+
+def smooth(data, iterations):
+    smooth_data = data.copy()
+    for key in ["Xvalue", "Yvalue", "Zvalue"]:
+        # run through each sequence of 3 points and average the middle point with the outside two
+        for j in range(0, iterations):
+            for i in range(0, (len(smooth_data) - 2)):
+                smooth_data[key][i + 1] = (smooth_data[key][i] + smooth_data[key][i + 1] + smooth_data[key][i + 2]) / 3
+    return smooth_data
 
     #
     #
@@ -102,5 +125,5 @@ def split(data, chunks):
 
 
 if __name__ == "__main__":
-    preprocess(range(1, 119), 4)
+    gait_preprocessor(range(1, 118), 1000)
     pass

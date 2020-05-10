@@ -2,3 +2,109 @@ import os
 import sklearn
 import pandas
 import numpy
+import pickle as pc
+import numpy as np
+from scipy.spatial import distance
+from fastdtw import fastdtw as fdtw
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import classification_report
+
+
+class Params:
+    file_types = ["accelerometer", "gyroscope"]
+    valid_keys = ["Xvalue", "Yvalue", "Zvalue"]
+    num_users = 117
+    evaluation_file = "Results/GaitAuthenticationResults.txt"
+
+
+def segment_gait_data(gait_data):
+    pickle_in = open("StepDataByUser/User1/accelerometer", "rb")
+    user1_data = pc.load(pickle_in)
+    pickle_in.close()
+    print(len(user1_data))
+    pass
+
+
+def comparison(data_frame_a, data_frame_b):
+    pass
+
+
+# custom metric
+def DTW(a, b):
+    distance, path = fdtw(a, b)
+
+    return distance
+
+
+def Trivial(a, b):
+    return 1
+
+
+if __name__ == "__main__":
+    pickle_in = open("StepDataByUser/User1/accelerometer", "rb")
+    user1_data = pc.load(pickle_in)
+    pickle_in = open("StepDataByUser/User2/accelerometer", "rb")
+    user2_data = pc.load(pickle_in)
+    pickle_in = open("StepDataByUser/User3/accelerometer", "rb")
+    user3_data = pc.load(pickle_in)
+    pickle_in.close()
+
+    # toy dataset
+    X = []
+    y = []
+
+    print("Getting User Data")
+    for user in range(1, 11):
+        print("User" + str(user))
+        acc_file = "StepDataByUser/User" + str(user) +"/accelerometer"
+        gyr_file = "StepDataByUser/User" + str(user) +"/gyroscope"
+        if os.path.exists(gyr_file) and os.path.exists(acc_file):
+            pickle_in = open(acc_file, "rb")
+            current_acc_data = pc.load(pickle_in)
+            pickle_in = open(gyr_file, "rb")
+            current_gyr_data = pc.load(pickle_in)
+            pickle_in.close()
+
+            for i in range(0, 10):
+                temp = []
+                for key in Params.valid_keys:
+                    temp += current_acc_data[i][key].tolist()
+                    temp += current_gyr_data[i][key].tolist()
+                X.append(np.array(temp))
+                y.append("User" + str(user))
+        else:
+            if not os.path.exists(gyr_file):
+                print("Path: \'" + gyr_file + "\' Not Found!")
+            else:
+                print("Path: \'" + acc_file + "\' Not Found!")
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    print("Split done")
+    print("Fitting...")
+    # train
+    parameters = {'n_neighbors': [2, 4]}
+    clf = GridSearchCV(KNeighborsClassifier(metric=DTW), parameters, cv=3, n_jobs=-1)
+    clf.fit(X_train, y_train)
+
+    print(clf.cv_results_)
+    print("Fit Done")
+
+    print("Starting Evaluation...")
+    # evaluate
+    y_pred = clf.predict(X_test)
+    classification_report = classification_report(y_test, y_pred, output_dict=True)
+
+    print(classification_report)
+    temp_data_frame = pandas.DataFrame.from_dict(classification_report)
+    # file = open(Params.evaluation_file, "")
+    pandas.DataFrame.to_csv(temp_data_frame, Params.evaluation_file)
+
+    print("Evaluation Saved To: " + Params.evaluation_file)
+
+    #
+    # for file_type in Params.file_types:
+    #     for user in range(Params.num_users):
+    #         current_filepath = "StepDataByUser/User" + "/" + str(user) + "/" + file_type
+    pass
