@@ -9,6 +9,28 @@ from sklearn.metrics import confusion_matrix, make_scorer
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 import pickle as pc
+import os
+import sklearn
+import pandas
+import numpy
+import pickle as pc
+import numpy as np
+from scipy.spatial import distance
+
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import classification_report
+
+random_seed = 1836
+
+
+class Params:
+    file_types = ["swipe"]
+    valid_keys = ["Xvalue", "Yvalue", "Zvalue"]
+    num_users = 117
+    evaluation_file = "Results/SwipeAuthenticationResults.txt"
+
 
 def extract_features(window_length):
     # iterate through each user
@@ -38,8 +60,8 @@ def extract_features(window_length):
                 i += window_length // 2
 
             window_id = 0
+            total_features = []
             for window in windows:
-                features_for_window = []
                 for swipe in window:
                     features = []
                     # find the length of the swipe dataframe
@@ -121,16 +143,68 @@ def extract_features(window_length):
                 features_by_window_avg = []
                 for num in range(0, len(features_by_window)):
                     features_by_window_avg.append(np.mean(features_by_window[num]))
-                # make new path if one doesn't exist
-                path = "FeatureByUserAndWindow/User" + str(user_id) + str(window_id)
-                if not os.path.exists(path):
-                    os.makedirs(path)
+                total_features.append(features_by_window_avg)
+            # make new path if one doesn't exist
+            path = "FeatureByUser/User" + str(user_id)
+            if not os.path.exists(path):
+                os.makedirs(path)
 
-                pickle_out = open(path + "/" 'session' + session, "wb")
-                pc.dump(features_by_window_avg, pickle_out)
-                pickle_out.close()
-                window_id += 1
-                print(features_by_window_avg)
+            pickle_out = open(path + "/" 'session' + session+".txt", "wb")
+            pc.dump(total_features, pickle_out)
+            pickle_out.close()
+            window_id += 1
+            print(total_features)
+
+
+def get_user_model(user_id):
+    # determine the type of data (horizontal phone, or vertical phone)
+    if user_id < 139:
+        session_type = "portrait"
+        start = 1
+        end = 139
+    else:
+        session_type = "landscape"
+        start = 139
+        end = 197
+
+    file1 = "FeatureByUser\\User" + str(user_id) + "\\session1.txt"
+    file2 = "FeatureByUser\\User" + str(user_id) + "\\session2.txt"
+    if os.path.exists(file1) and os.path.exists(file2):
+        gen_train_file = open(file1, "rb")
+        gen_test_file = open(file2, "rb")
+        gen_train_x = pc.load(gen_train_file)
+        gen_train_file.close()
+        gen_test = pc.load(gen_test_file)
+        gen_test_file.close()
+
+        if len(gen_train_x) > 0 and len(gen_test) > 0:
+            imp_train_x = []
+            imp_test = []
+            for impostor in range(1, 3):
+                file1 = "FeatureByUser\\User" + str(impostor) + "\\session1"
+                file2 = "FeatureByUser\\User" + str(impostor) + "\\session2"
+                if impostor != user_id and os.path.exists(file1) and os.path.exists(file2):
+                    imp_train_file = open(file1, "rb")
+                    imp_test_file = open(file2, "rb")
+                    imp_train_x = imp_train_x + pc.load(imp_train_file)
+                    imp_train_file.close()
+                    imp_test = imp_test + pc.load(imp_test_file)
+                    imp_test_file.close()
+
+            if len(imp_train_x) > 0 and len(imp_test) > 0:
+                return session_type, gen_train_x, imp_train_x, gen_test, imp_test
+    else: print(1)
+
+
+def select_features(training_X, training_y, genuine_testing, impostor_testing, thresholdK):
+    fselector = SelectKBest(mutual_info_classif, k=int(thresholdK))
+    # Selecting k features based on mutual information
+    # You can try other methods if you want to. Probably selecting features using mRmR will make more sense.
+    fselector.fit(training_X, training_y)
+    training_X = fselector.transform(training_X)
+    genuine_testing = fselector.transform(genuine_testing)
+    impostor_testing = fselector.transform(impostor_testing)
+    return training_X, training_y, genuine_testing, impostor_testing  # returning the matrix with selected features
 
 
 def get_error_rates(training_x, training_y, gen_test_x, imp_test_x, classification_method):
@@ -217,10 +291,128 @@ def get_error_rates(training_x, training_y, gen_test_x, imp_test_x, classificati
         raise ValueError('classification method unknown!')
 
 if __name__ == "__main__":
-    extract_features(100)
+    extract_features(10)
+    final_result = []
+    row_counter = 0
+    classification_methods = ['kNN', 'LogReg']
+    phone_usage_mode = ['landacape', 'portrait']
+    user_list = []  # Get the user list
+    feature_selection_threshold = 7  # Try different numbers of features
+    SMOTE_k = 7
+    user_models = {}  # this is a dictionary of models for eac
+    # Build biometric models for each user
+    # There would two models for each user, namely, landscape and portrait
+    gen_train_x_total = []
+    gen_train_y_total = []
+    for user_id in range(1, 3):
+        if user_id != 187:
+            print(user_id)
+            session, gen_train_x, imp_train_x, gen_test, imp_test = get_user_model(user_id)
+            print("User" + str(user_id) + "_" + session)
 
 
+            training_x = gen_train_x + imp_train_x
+            training_y = []
+            for i in range(0, len(gen_train_x)):
+                training_y.append(1)
+            for i in range(0, len(imp_train_x)):
+                training_y.append(0)
+
+            gen_train_x_total.append(training_x)
+            gen_train_y_total.append(training_y)
+
+    # print("Correcting Oversampling...")
+    # oversampling = SMOTE(sampling_strategy=1.0, random_state=random_seed, k_neighbors=SMOTE_k)
+    # training_x, training_y = oversampling.fit_resample(np.array(gen_train_x_total), np.array(gen_train_y_total))
+
+    print("Selecting Features...")
+    training_x, training_y, gen_test, imp_test = select_features(gen_train_x_total, gen_train_y_total,
+                                                             gen_test,
+                                                             imp_test,
+                                                             feature_selection_threshold)
+
+    print("Getting Error Rates...")
+    tn, fp, fn, tp = get_error_rates(training_x, training_y, gen_test, imp_test, "kNN")
+
+    far = fp / (fp + tn)
+    frr = fn / (fn + tp)
+    tar = tp / (fn + tp)
+    trr = tn / (fp + tn)
+    hter = (far + frr) / 2
+
+    print("HTER:", hter)
+
+    analyse_results(far, frr, tar, trr)
+
+    user_result = ["User"+str(user_id), session, "kNN", tn, fp, fn, tp, hter]
+    final_result.append(user_result)
+
+    result_dataframe = pd.DataFrame(final_result, columns=['user', 'mode', 'method', 'tn', 'fp', 'fn', 'tp', "HTER"])
+    result_dataframe.to_csv("final_result.csv", encoding='utf-8', index=False)
 
 
+    if __name__ == "__main__":
+        # pickle_in = open("StepDataByUser/User1/accelerometer", "rb")
+        # user1_data = pc.load(pickle_in)
+        # pickle_in = open("StepDataByUser/User2/accelerometer", "rb")
+        # user2_data = pc.load(pickle_in)
+        # pickle_in = open("StepDataByUser/User3/accelerometer", "rb")
+        # user3_data = pc.load(pickle_in)
+        # pickle_in.close()
+
+        # toy dataset
+        X = []
+        y = []
+
+        print("Getting User Data")
+        for user in range(1, 3):
+            print("User" + str(user))
+            features = "FeatureByUserAndWindow/User" + str(user)+"/session1"
+            if os.path.exists(features):
+                pickle_in = open(features, "rb")
+                current_y_test = pc.load(pickle_in)
+                pickle_in.close()
+                print(current_y_test)
+                for i in range(0, 10):
+                    temp = []
+                    for key in Params.valid_keys:
+                        temp += current_y_test[i][key].tolist()
+
+                    X.append(np.array(temp))
+                    y.append("User" + str(user))
+            else: print("does not exist")
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y)
+        print("Split done")
+        print("Fitting...")
+
+        X_train, y_train, X_test, y_test = select_features(training_x, training_y,
+                                                                         gen_test,
+                                                                         imp_test,
+                                                                         feature_selection_threshold)
+        # train
+        parameters = {'n_neighbors': [2, 4]}
+        clf = GridSearchCV(KNeighborsClassifier(metric=DTW), parameters, cv=3, n_jobs=-1)
+        clf.fit(X_train, y_train)
+
+        print(clf.cv_results_)
+        print("Fit Done")
+
+        print("Starting Evaluation...")
+        # evaluate
+        y_pred = clf.predict(X_test)
+        classification_report = classification_report(y_test, y_pred, output_dict=True)
+
+        print(classification_report)
+        temp_data_frame = pandas.DataFrame.from_dict(classification_report)
+        # file = open(Params.evaluation_file, "")
+        pandas.DataFrame.to_csv(temp_data_frame, Params.evaluation_file)
+
+        print("Evaluation Saved To: " + Params.evaluation_file)
+
+        #
+        # for file_type in Params.file_types:
+        #     for user in range(Params.num_users):
+        #         current_filepath = "StepDataByUser/User" + "/" + str(user) + "/" + file_type
 
 

@@ -363,43 +363,50 @@ if __name__ == "__main__":
     user_models = {}  # this is a dictionary of models for eac
     # Build biometric models for each user
     # There would two models for each user, namely, landscape and portrait
-    for user_id in range(180, 190):
-        session, gen_train_x, imp_train_x, gen_test, imp_test = get_user_model(user_id)
+    gen_train_x_total = []
+    gen_train_y_total = []
+    for user_id in range(180, 187):
+        if user_id != 187:
+            print(user_id)
+            session, gen_train_x, imp_train_x, gen_test, imp_test = get_user_model(user_id)
+            print("User" + str(user_id) + "_" + session)
 
-        print("User" + str(user_id) + "_" + session)
 
-        training_x = gen_train_x + imp_train_x
-        training_y = []
-        for i in range(0, len(gen_train_x)):
-            training_y.append(1)
-        for i in range(0, len(imp_train_x)):
-            training_y.append(0)
+            training_x = gen_train_x + imp_train_x
+            training_y = []
+            for i in range(0, len(gen_train_x)):
+                training_y.append(1)
+            for i in range(0, len(imp_train_x)):
+                training_y.append(0)
 
-        print("Correcting Oversampling...")
-        oversampling = SMOTE(sampling_strategy=1.0, random_state=random_seed, k_neighbors=SMOTE_k)
-        training_x, training_y = oversampling.fit_resample(training_x, training_y)
+            gen_train_x_total.append(training_x)
+            gen_train_y_total.append(training_y)
 
-        print("Selecting Features...")
-        training_x, training_y, gen_test, imp_test = select_features(training_x, training_y,
-                                                                     gen_test,
-                                                                     imp_test,
-                                                                     feature_selection_threshold)
+    # print("Correcting Oversampling...")
+    # oversampling = SMOTE(sampling_strategy=1.0, random_state=random_seed, k_neighbors=SMOTE_k)
+    # training_x, training_y = oversampling.fit_resample(np.array(gen_train_x_total), np.array(gen_train_y_total))
 
-        print("Getting Error Rates...")
-        tn, fp, fn, tp = get_error_rates(training_x, training_y, gen_test, imp_test, "kNN")
+    print("Selecting Features...")
+    training_x, training_y, gen_test, imp_test = select_features(gen_train_x_total, gen_train_y_total,
+                                                             gen_test,
+                                                             imp_test,
+                                                             feature_selection_threshold)
 
-        far = fp / (fp + tn)
-        frr = fn / (fn + tp)
-        tar = tp / (fn + tp)
-        trr = tn / (fp + tn)
-        hter = (far + frr) / 2
+    print("Getting Error Rates...")
+    tn, fp, fn, tp = get_error_rates(training_x, training_y, gen_test, imp_test, "kNN")
 
-        print("HTER:", hter)
+    far = fp / (fp + tn)
+    frr = fn / (fn + tp)
+    tar = tp / (fn + tp)
+    trr = tn / (fp + tn)
+    hter = (far + frr) / 2
 
-        analyse_results(far, frr, tar, trr)
+    print("HTER:", hter)
 
-        user_result = ["User"+str(user_id), session, "kNN", tn, fp, fn, tp, hter]
-        final_result.append(user_result)
+    analyse_results(far, frr, tar, trr)
+
+    user_result = ["User"+str(user_id), session, "kNN", tn, fp, fn, tp, hter]
+    final_result.append(user_result)
 
     result_dataframe = pd.DataFrame(final_result, columns=['user', 'mode', 'method', 'tn', 'fp', 'fn', 'tp', "HTER"])
     result_dataframe.to_csv("final_result.csv", encoding='utf-8', index=False)
