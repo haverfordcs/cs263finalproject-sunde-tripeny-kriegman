@@ -132,6 +132,90 @@ def extract_features(window_length):
                 window_id += 1
                 print(features_by_window_avg)
 
+
+def get_error_rates(training_x, training_y, gen_test_x, imp_test_x, classification_method):
+    if classification_method == "kNN":  # This is an example of how can you use kNN
+        n_neighbors = [int(x) for x in range(5, 10, 1)]
+        # print('n_neighbors',n_neighbors)
+        dist_met = ['manhattan', 'euclidean']
+        # create the random grid
+        param_grid = {'n_neighbors': n_neighbors,
+                      'metric': dist_met}
+        CUAuthModel = KNeighborsClassifier()
+        scoring_function = 'f1'  # You can use scoring function as HTER, see Aux_codes.py for details
+        # Grid search for best parameter search .. using 10 fold cross validation and 'f1' as a scoring function.
+        SearchTheBestParam = GridSearchCV(estimator=CUAuthModel, param_grid=param_grid, cv=10,
+                                          scoring=scoring_function)
+        SearchTheBestParam.fit(training_x, training_y)
+        best_nn = SearchTheBestParam.best_params_['n_neighbors']
+        best_dist = SearchTheBestParam.best_params_['metric']
+
+        # Retraining the model again using the best parameter and testing, remember k = 1 will always give 100% accuracy :) on training data
+        FinalModel = KNeighborsClassifier(n_neighbors=best_nn, metric=best_dist)
+        FinalModel.fit(training_x, training_y)
+
+        pred_gen_lables = FinalModel.predict(gen_test)
+        pred_imp_lables = FinalModel.predict(imp_test)
+        pred_testing_labels = np.concatenate((pred_gen_lables, pred_imp_lables))
+
+        testing_y = []
+        for i in range(0, len(gen_test)):
+            testing_y.append(1)
+        for i in range(0, len(imp_test)):
+            testing_y.append(0)
+
+        # computing the error rates for the current predictions
+        tn, fp, fn, tp = confusion_matrix(testing_y, pred_testing_labels).ravel()
+
+
+
+        # far = fp / (fp + tn)
+        # frr = fn / (fn + tp)
+        # hter = (far + frr) / 2
+        return tn, fp, fn, tp
+
+    elif classification_method == "LogReg":  # This is an example of how can you use Logistic regression
+        param_grid = [
+            {'solver': ['newton-cg'],
+             'C': [0.1, 0.2, 0.4, 0.45, 0.5],
+             'penalty': ['l1', 'l2']}]  # Trying to improve
+
+        # Use the random grid to search for best hyperparameters
+        # First create the base model to tune
+        CUAuthModel = linear_model.LogisticRegression(random_state=random_seed, tol=1e-5)
+        scoring_function = 'f1'  # You can use scoring function as HTER, see Aux_codes.py for details
+        # Grid search for best parameter search .. using 10 fold cross validation and 'f1' as a scoring function.
+        SearchTheBestParam = GridSearchCV(estimator=CUAuthModel, param_grid=param_grid, cv=10,
+                                          scoring=scoring_function)
+        SearchTheBestParam.fit(training_x, training_y)
+        solver = SearchTheBestParam.best_params_['solver']
+        cval = SearchTheBestParam.best_params_['C']
+        penalty = SearchTheBestParam.best_params_['penalty']
+
+        # Retraining the model again using the best parameter and testing, remember k = 1 will always give 100% accuracy :) on training data
+        FinalModel = linear_model.LogisticRegression(solver=solver, C=cval, penalty=penalty,
+                                                     random_state=random_seed, tol=1e-5)
+        FinalModel.fit(training_x, training_y)
+        pred_gen_lables = FinalModel.predict(gen_test)
+        pred_imp_lables = FinalModel.predict(imp_test)
+        pred_testing_labels = np.concatenate((pred_gen_lables, pred_imp_lables))
+
+        testing_y = []
+        for i in range(0, len(gen_test)):
+            testing_y.append(1)
+        for i in range(0, len(imp_test)):
+            testing_y.append(0)
+
+        # computing the error rates for the current predictions
+        tn, fp, fn, tp = confusion_matrix(testing_y, pred_testing_labels).ravel()
+        # far = fp / (fp + tn)
+        # frr = fn / (fn + tp)
+        # hter = (far + frr) / 2
+        return tn, fp, fn, tp
+
+    else:  # Add more classification methods same as above
+        raise ValueError('classification method unknown!')
+
 if __name__ == "__main__":
     extract_features(100)
 
