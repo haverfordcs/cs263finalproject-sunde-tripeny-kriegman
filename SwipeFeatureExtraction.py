@@ -197,15 +197,13 @@ def get_user_model(user_id):
         print(1)
 
 
-def select_features(training_X, training_y, genuine_testing, impostor_testing, thresholdK):
+def select_features(training_X, training_y, thresholdK):
     fselector = SelectKBest(mutual_info_classif, k=int(thresholdK))
     # Selecting k features based on mutual information
     # You can try other methods if you want to. Probably selecting features using mRmR will make more sense.
     fselector.fit(training_X, training_y)
     training_X = fselector.transform(training_X)
-    genuine_testing = fselector.transform(genuine_testing)
-    impostor_testing = fselector.transform(impostor_testing)
-    return training_X, training_y, genuine_testing, impostor_testing  # returning the matrix with selected features
+    return training_X, training_y  # returning the matrix with selected features
 
 
 def get_error_rates(training_x, training_y, gen_test_x, imp_test_x, classification_method):
@@ -289,74 +287,15 @@ def get_error_rates(training_x, training_y, gen_test_x, imp_test_x, classificati
     else:  # Add more classification methods same as above
         raise ValueError('classification method unknown!')
 
-
-# if __name__ == "__main__":
-#     # extract_features(10)
-#     final_result = []
-#     row_counter = 0
-#     classification_methods = ['kNN', 'LogReg']
-#     phone_usage_mode = ['landacape', 'portrait']
-#     user_list = []  # Get the user list
-#     feature_selection_threshold = 7  # Try different numbers of features
-#     SMOTE_k = 7
-#     user_models = {}  # this is a dictionary of models for eac
-#     # Build biometric models for each user
-#     # There would two models for each user, namely, landscape and portrait
-#     gen_train_x_total = []
-#     gen_train_y_total = []
-#     for user_id in range(1, 3):
-#         if user_id != 187:
-#             print(user_id)
-#             session, gen_train_x, imp_train_x, gen_test, imp_test = get_user_model(user_id)
-#             print("User" + str(user_id) + "_" + session)
-#
-#
-#             training_x = gen_train_x + imp_train_x
-#             training_y = []
-#             for i in range(0, len(gen_train_x)):
-#                 training_y.append(1)
-#             for i in range(0, len(imp_train_x)):
-#                 training_y.append(0)
-#
-#             gen_train_x_total.append(training_x)
-#             gen_train_y_total.append(training_y)
-#
-#     # print("Correcting Oversampling...")
-#     # oversampling = SMOTE(sampling_strategy=1.0, random_state=random_seed, k_neighbors=SMOTE_k)
-#     # training_x, training_y = oversampling.fit_resample(np.array(gen_train_x_total), np.array(gen_train_y_total))
-#
-#     print("Selecting Features...")
-#     training_x, training_y, gen_test, imp_test = select_features(gen_train_x_total, gen_train_y_total,
-#                                                              gen_test,
-#                                                              imp_test,
-#                                                              feature_selection_threshold)
-#
-#     print("Getting Error Rates...")
-#     tn, fp, fn, tp = get_error_rates(training_x, training_y, gen_test, imp_test, "kNN")
-#
-#     far = fp / (fp + tn)
-#     frr = fn / (fn + tp)
-#     tar = tp / (fn + tp)
-#     trr = tn / (fp + tn)
-#     hter = (far + frr) / 2
-#
-#     print("HTER:", hter)
-#
-#     analyse_results(far, frr, tar, trr)
-#
-#     user_result = ["User"+str(user_id), session, "kNN", tn, fp, fn, tp, hter]
-#     final_result.append(user_result)
-#
-#     result_dataframe = pd.DataFrame(final_result, columns=['user', 'mode', 'method', 'tn', 'fp', 'fn', 'tp', "HTER"])
-#     result_dataframe.to_csv("final_result.csv", encoding='utf-8', index=False)
-
-
 if __name__ == "__main__":
+    #extract_features(10)
     X = []
     y = []
 
+
     print("Getting User Data")
-    for user in range(1, 3):
+    for user in range(1, 21):
+
         print("User" + str(user))
         features = "FeatureByUser/User" + str(user) + "/session1"
         if os.path.exists(features):
@@ -364,19 +303,27 @@ if __name__ == "__main__":
             current_y_test = pc.load(pickle_in)
             pickle_in.close()
             print(current_y_test)
-            for i in range(0, min(10, len(current_y_test))):
+            for i in range(0, (len(current_y_test))):
                 X.append(current_y_test[i])
-                y.append("User" + str(user))
+                y.append(["User" + str(user)])
         else:
             print("does not exist")
 
     X_train, X_test, y_train, y_test = train_test_split(X, y)
     print("Split done")
     print("Fitting...")
+    print(y_train, y_test, X_train)
 
-    # X_train, y_train, X_test, y_test = select_features(X_train, y_train, X_test, y_test, 7)
-    #
-    # train
+    print("Correcting Oversampling...")
+    from imblearn.over_sampling import RandomOverSampler
+    ros = RandomOverSampler(random_state=0)
+    X_train, y_train = ros.fit_resample(X_train, y_train)
+
+    print("Selecting Features...")
+    training_x, training_y = select_features(X_train, y_train,
+                                                             18)
+    print("HHHHEHHRHHEHHRHE", X_train, y_train)
+
     parameters = {'n_neighbors': [2, 4]}
     clf = GridSearchCV(KNeighborsClassifier(), parameters, cv=3, n_jobs=-1)
     clf.fit(X_train, y_train)
@@ -395,4 +342,3 @@ if __name__ == "__main__":
     pandas.DataFrame.to_csv(temp_data_frame, Params.evaluation_file)
 
     print("Evaluation Saved To: Results\\SwipeAuthenticationResults.csv")
-
