@@ -4,7 +4,6 @@ import pandas
 import numpy
 import pickle as pc
 import numpy as np
-from scipy.spatial import distance
 from fastdtw import fastdtw as fdtw
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -19,18 +18,6 @@ class Params:
     evaluation_file = "Results/GaitAuthenticationResults.txt"
 
 
-def segment_gait_data(gait_data):
-    pickle_in = open("StepDataByUser/User1/accelerometer", "rb")
-    user1_data = pc.load(pickle_in)
-    pickle_in.close()
-    print(len(user1_data))
-    pass
-
-
-def comparison(data_frame_a, data_frame_b):
-    pass
-
-
 # custom metric
 def DTW(a, b):
     distance, path = fdtw(a, b)
@@ -38,20 +25,7 @@ def DTW(a, b):
     return distance
 
 
-def Trivial(a, b):
-    return 1
-
-
 if __name__ == "__main__":
-    pickle_in = open("StepDataByUser/User1/accelerometer", "rb")
-    user1_data = pc.load(pickle_in)
-    pickle_in = open("StepDataByUser/User2/accelerometer", "rb")
-    user2_data = pc.load(pickle_in)
-    pickle_in = open("StepDataByUser/User3/accelerometer", "rb")
-    user3_data = pc.load(pickle_in)
-    pickle_in.close()
-
-    # toy dataset
     X = []
     y = []
 
