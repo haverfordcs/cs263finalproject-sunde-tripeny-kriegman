@@ -167,8 +167,8 @@ def get_user_model(user_id):
         start = 139
         end = 197
 
-    file1 = "FeatureByUser\\User" + str(user_id) + "\\session1"
-    file2 = "FeatureByUser\\User" + str(user_id) + "\\session2"
+    file1 = "FeatureByUser/User" + str(user_id) + "/session1"
+    file2 = "FeatureByUser/User" + str(user_id) + "/session2"
     if os.path.exists(file1) and os.path.exists(file2):
         gen_train_file = open(file1, "rb")
         gen_test_file = open(file2, "rb")
@@ -181,8 +181,8 @@ def get_user_model(user_id):
             imp_train_x = []
             imp_test = []
             for impostor in range(1, 3):
-                file1 = "FeatureByUser\\User" + str(impostor) + "\\session1"
-                file2 = "FeatureByUser\\User" + str(impostor) + "\\session2"
+                file1 = "FeatureByUser/User" + str(impostor) + "/session1"
+                file2 = "FeatureByUser/User" + str(impostor) + "/session2"
                 if impostor != user_id and os.path.exists(file1) and os.path.exists(file2):
                     imp_train_file = open(file1, "rb")
                     imp_test_file = open(file2, "rb")
