@@ -1,7 +1,5 @@
 import os
-import sklearn
 import pandas
-import numpy
 import pickle as pc
 import numpy as np
 from fastdtw import fastdtw as fdtw
@@ -76,9 +74,4 @@ if __name__ == "__main__":
     pandas.DataFrame.to_csv(temp_data_frame, Params.evaluation_file)
 
     print("Evaluation Saved To: " + Params.evaluation_file)
-
-    #
-    # for file_type in Params.file_types:
-    #     for user in range(Params.num_users):
-    #         current_filepath = "StepDataByUser/User" + "/" + str(user) + "/" + file_type
     pass

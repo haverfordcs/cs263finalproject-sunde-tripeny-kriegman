@@ -1,21 +1,10 @@
-import os
-import pandas as pd
-from imblearn.over_sampling import SMOTE
-from matplotlib import pyplot as plt
 from sklearn.feature_selection import mutual_info_classif, SelectKBest
-from sklearn.model_selection import GridSearchCV
 from sklearn import linear_model
 from sklearn.metrics import confusion_matrix, make_scorer
-import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
-import pickle as pc
 import os
-import sklearn
 import pandas
-import numpy
 import pickle as pc
 import numpy as np
-from scipy.spatial import distance
 
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -26,8 +15,6 @@ random_seed = 1836
 
 
 class Params:
-    file_types = ["swipe"]
-    valid_keys = ["Xvalue", "Yvalue", "Zvalue"]
     num_users = 117
     evaluation_file = "Results/SwipeAuthenticationResults.csv"
 
@@ -287,11 +274,11 @@ def get_error_rates(training_x, training_y, gen_test_x, imp_test_x, classificati
     else:  # Add more classification methods same as above
         raise ValueError('classification method unknown!')
 
+
 if __name__ == "__main__":
-    #extract_features(10)
+    # extract_features(10)
     X = []
     y = []
-
 
     print("Getting User Data")
     for user in range(1, 21):
@@ -316,12 +303,13 @@ if __name__ == "__main__":
 
     print("Correcting Oversampling...")
     from imblearn.over_sampling import RandomOverSampler
+
     ros = RandomOverSampler(random_state=0)
     X_train, y_train = ros.fit_resample(X_train, y_train)
 
     print("Selecting Features...")
     training_x, training_y = select_features(X_train, y_train,
-                                                             18)
+                                             18)
     print("HHHHEHHRHHEHHRHE", X_train, y_train)
 
     parameters = {'n_neighbors': [2, 4]}
