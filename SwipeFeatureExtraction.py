@@ -149,7 +149,7 @@ def extract_features(window_length):
             if not os.path.exists(path):
                 os.makedirs(path)
 
-            pickle_out = open(path + "/" 'session' + session+".txt", "wb")
+            pickle_out = open(path + "/" 'session' + session, "wb")
             pc.dump(total_features, pickle_out)
             pickle_out.close()
             window_id += 1
@@ -167,8 +167,8 @@ def get_user_model(user_id):
         start = 139
         end = 197
 
-    file1 = "FeatureByUser\\User" + str(user_id) + "\\session1.txt"
-    file2 = "FeatureByUser\\User" + str(user_id) + "\\session2.txt"
+    file1 = "FeatureByUser\\User" + str(user_id) + "\\session1"
+    file2 = "FeatureByUser\\User" + str(user_id) + "\\session2"
     if os.path.exists(file1) and os.path.exists(file2):
         gen_train_file = open(file1, "rb")
         gen_test_file = open(file2, "rb")
