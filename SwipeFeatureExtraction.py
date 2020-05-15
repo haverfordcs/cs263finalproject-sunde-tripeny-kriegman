@@ -29,7 +29,7 @@ class Params:
     file_types = ["swipe"]
     valid_keys = ["Xvalue", "Yvalue", "Zvalue"]
     num_users = 117
-    evaluation_file = "Results/SwipeAuthenticationResults.txt"
+    evaluation_file = "Results/SwipeAuthenticationResults.csv"
 
 
 def extract_features(window_length):
@@ -349,8 +349,8 @@ def get_error_rates(training_x, training_y, gen_test_x, imp_test_x, classificati
 #
 #     result_dataframe = pd.DataFrame(final_result, columns=['user', 'mode', 'method', 'tn', 'fp', 'fn', 'tp', "HTER"])
 #     result_dataframe.to_csv("final_result.csv", encoding='utf-8', index=False)
-#
-#
+
+
 if __name__ == "__main__":
     X = []
     y = []
@@ -364,12 +364,8 @@ if __name__ == "__main__":
             current_y_test = pc.load(pickle_in)
             pickle_in.close()
             print(current_y_test)
-            for i in range(0, 10):
-                temp = []
-                for key in Params.valid_keys:
-                    temp += current_y_test[i][key].tolist()
-
-                X.append(np.array(temp))
+            for i in range(0, min(10, len(current_y_test))):
+                X.append(current_y_test[i])
                 y.append("User" + str(user))
         else:
             print("does not exist")
@@ -378,24 +374,25 @@ if __name__ == "__main__":
     print("Split done")
     print("Fitting...")
 
-    X_train, y_train, X_test, y_test = select_features(X_train, y_train, X_test, y_test, 7)
+    # X_train, y_train, X_test, y_test = select_features(X_train, y_train, X_test, y_test, 7)
+    #
+    # train
+    parameters = {'n_neighbors': [2, 4]}
+    clf = GridSearchCV(KNeighborsClassifier(), parameters, cv=3, n_jobs=-1)
+    clf.fit(X_train, y_train)
 
-    # # train
-    # parameters = {'n_neighbors': [2, 4]}
-    # clf = GridSearchCV(KNeighborsClassifier(), parameters, cv=3, n_jobs=-1)
-    # clf.fit(X_train, y_train)
-    #
-    # print(clf.cv_results_)
-    # print("Fit Done")
-    #
-    # print("Starting Evaluation...")
-    # # evaluate
-    # y_pred = clf.predict(X_test)
-    # classification_report = classification_report(y_test, y_pred, output_dict=True)
-    #
-    # print(classification_report)
-    # temp_data_frame = pandas.DataFrame.from_dict(classification_report)
-    # # file = open(Params.evaluation_file, "")
-    # pandas.DataFrame.to_csv(temp_data_frame, Params.evaluation_file)
-    #
-    # print("Evaluation Saved To: " +
+    print(clf.cv_results_)
+    print("Fit Done")
+
+    print("Starting Evaluation...")
+    # evaluate
+    y_pred = clf.predict(X_test)
+    classification_report = classification_report(y_test, y_pred, output_dict=True)
+
+    print(classification_report)
+    temp_data_frame = pandas.DataFrame.from_dict(classification_report)
+    # file = open(Params.evaluation_file, "")
+    pandas.DataFrame.to_csv(temp_data_frame, Params.evaluation_file)
+
+    print("Evaluation Saved To: Results\\SwipeAuthenticationResults.csv")
+
