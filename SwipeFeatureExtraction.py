@@ -26,7 +26,7 @@ def extract_features(window_length):
             features_by_window = []
 
             # load the data
-            pickle_in = open("SwipeDataByUser\\User" + str(user_id) + "\\" + session_type + session, "rb")
+            pickle_in = open("SwipeDataByUser/User" + str(user_id) + "/" + session_type + session, "rb")
             current_data = pc.load(pickle_in)
             pickle_in.close()
 
@@ -122,11 +122,11 @@ def extract_features(window_length):
                 for num in range(0, len(features_by_window)):
                     features_by_window_avg.append(np.mean(features_by_window[num]))
                 # make new path if one doesn't exist
-                path = "FeatureByUserAndWindow\\User" + str(user_id) + str(window_id)
+                path = "FeatureByUserAndWindow/User" + str(user_id) + str(window_id)
                 if not os.path.exists(path):
                     os.makedirs(path)
 
-                pickle_out = open(path + "\\" 'session' + session, "wb")
+                pickle_out = open(path + "/" 'session' + session, "wb")
                 pc.dump(features_by_window_avg, pickle_out)
                 pickle_out.close()
                 window_id += 1
